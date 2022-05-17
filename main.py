@@ -26,6 +26,7 @@ def shutdown():
 
 
 if __name__ == '__main__':
+    print('hallo')
     MQTT_SERVER = 'test.mosquitto.org'  # MQTT Server
     port = 1883
     MQTT_PATH = "friendshiplamps"  # Das Topic
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     publisher = mqtt_publisher.MqttPublisher(MQTT_SERVER, port, MQTT_PATH)
 
     # Encryption Area
-    key = encryption_utility.read_key('main/key.key');
+    key = encryption_utility.read_key('res/key.key');
     HWID = encryption_utility.generate_key('crazy').decode();
     message = generateJSONButtonMessage(False, HWID)
     ch = True
