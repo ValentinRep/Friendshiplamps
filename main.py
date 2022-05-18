@@ -2,13 +2,6 @@ import sys
 import time
 import communication.Communicator as Communicator
 
-def pushed():
-    print("Lampe wird aktiviert")
-
-def shutdown():
-    print("Lampe wird ausgeschalten")
-
-
 if __name__ == '__main__':
     MQTT_SERVER = 'test.mosquitto.org'  # MQTT Server
     port = 1883
@@ -19,7 +12,6 @@ if __name__ == '__main__':
     pushedTime = round(time.time())
 
     communicator = Communicator.Comunicator(MQTT_SERVER, port, MQTT_PATH)
-
 
     while True:
         communicator.processMessages()

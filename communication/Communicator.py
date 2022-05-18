@@ -22,10 +22,18 @@ class Comunicator:
 
     def processMessages(self):
         while not self.q.empty():
+            isValidatedTopic = False
+            isMyHWID = False
             data = json.loads(self.q.get().decode())
             for key, value in data.items():
-                data[key] = encryption_utility.decryptToBytes(self.key, value.encode())
-            self.messages.append(data)
+                decryptedKey = encryption_utility.decryptToBytes(self.key, value.encode())
+                if decryptedKey.startswith(self.MQTT_PATH):
+                    isValidatedTopic = True
+                if decryptedKey == self.HWID:
+                    isMyHWID = True
+                data[key] = decryptedKey
+            if isValidatedTopic and not isMyHWID:
+                self.messages.append(data)
 
     def hasMessages(self):
         self.processMessages()
@@ -41,7 +49,7 @@ class Comunicator:
         if "ID" in kwargs or "timestamp" in kwargs or "HWID" in kwargs:
             raise ValueError("ID, HWID und timestamp werden von der Methode publish selber generiert")
         currentTime = str(datetime.datetime.now().timestamp())
-        kwargs["ID"] = "Friendshiplamps" + currentTime
+        kwargs["ID"] = self.MQTT_PATH + currentTime
         kwargs["timestamp"] = currentTime
         kwargs["HWID"] = self.HWID
         for key, value in kwargs.items():
