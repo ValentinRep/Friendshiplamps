@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import json
 from multiprocessing import Queue
 
 #Methode subscribed eine Topic auf einem MQTT-Server und schreibt dieses in den MQTT-Server
@@ -14,15 +15,13 @@ class MqttSubscriber:
         self.MQTT_SERVER = MQTT_SERVER
         self.port = port
         self.q = q
-        print('Initialisierung vom MQTT subscriber')
 
     def on_connect(self, client, userdata, flags, rc):
         client.subscribe(self.MQTT_PATH)
 
 
     def on_message(self, client, userdata, msg):
-        recived = msg.topic + " " + str(msg.payload)
-        self.q.put(recived)
+        self.q.put(msg.payload)
 
     def proc_subscribe(self):
         client = mqtt.Client()
