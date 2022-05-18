@@ -1,2 +1,2 @@
 # Friendshiplamps
-Software für RaspberryPi zum Ansteuern verbundener Lampen
+Software für die Friendshipslamps, zwei Raspberry Pis, welche als Lampe funktionieren bei Verbindung zu einem MQTT Broker und gleicher Einstellung sich gegenseitig gleichzeitig an und aus schalten, sollte der andere, die lampe an und aus schalgen. Die Lampen funktionieren parallel. Die Kommunikation ist verschlüsselt, das heißt Abensder und Empfänger mussen einen Key besitzen, dass diese Kommunizieren können. Jeder Text, welcher über das Internet verschickt wird ist verschlüsselt, außer die keys bei der JSON Über MQTT.
