@@ -74,7 +74,7 @@ class Comunicator:
         return oldMessages
 
     def publish(self, **kwargs):
-        mqtt_message_values = kwargs
+        mqtt_message_values = {}
         raw_message = json.dumps(kwargs)
 
         currentTime = str(datetime.datetime.now().timestamp())
