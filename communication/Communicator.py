@@ -35,7 +35,7 @@ class Comunicator:
                     if decryptedKey.startswith(self.MQTT_PATH):
                         isValidatedTopic = True
                     if decryptedKey == self.HWID:
-                        isMyHWID = False
+                        isMyHWID = True
                 if key == "timestamp":
                     try:
                         timestampFloat = float(decryptedKey)
