@@ -8,15 +8,21 @@ import datetime
 
 
 class Comunicator:
-    def __init__(self, MQTT_SERVER, port, MQTT_PATH):
+    def __init__(self, message_lifetime, key, client_name, MQTT_SERVER, port, MQTT_PATH):
+        self.message_lifetime = message_lifetime
+        self.key = key
+        self.client_name = client_name
+
         self.MQTT_SERVER = MQTT_SERVER
         self.port = port
         self.MQTT_PATH = MQTT_PATH
-        self.key = encryption_utility.read_key('res/key.key');
-        self.HWID = encryption_utility.generate_key('PC').decode();
+
         self.messages = []
-        self.publisher = mqtt_pubisher.MqttPublisher(MQTT_SERVER, port, MQTT_PATH)
         self.messageIDs = []
+        self.publisher = mqtt_pubisher.MqttPublisher(MQTT_SERVER, port, MQTT_PATH)
+
+        #Der MQTT-Subscriber muss in einen neuen Prozess gestartet werden, da sonst das Programm auf eine Nachricht
+        #warten würde.
         self.q = Queue()
         self.p1 = multiprocessing.Process(target=mqtt_subscriber.subscribe, args=(self.MQTT_SERVER, self.port, self.MQTT_PATH, self.q))
         self.p1.start()
@@ -27,19 +33,19 @@ class Comunicator:
         while not self.q.empty():
             isValidatedTopic = False
             isNewMessage = False
-            isMyHWID = False
+            isMyClient_name = False
             data = json.loads(self.q.get().decode())
             for key, value in data.items():
                 decryptedKey = encryption_utility.decryptToBytes(self.key, value.encode())
                 if key == "ID":
                     if decryptedKey.startswith(self.MQTT_PATH):
                         isValidatedTopic = True
-                    if decryptedKey == self.HWID:
-                        isMyHWID = True
+                    if decryptedKey == self.client_name:
+                        isMyClient_name = False
                 if key == "timestamp":
                     try:
                         timestampFloat = float(decryptedKey)
-                        if currentTime - timestampFloat > 10:
+                        if currentTime - timestampFloat > self.message_lifetime:
                             isNewMessage = False
                         else:
                             if value in self.messageIDs:
@@ -50,7 +56,7 @@ class Comunicator:
                     except ValueError:
                         print("Timestamp ist keine float")
                 data[key] = decryptedKey
-            if isValidatedTopic and not isMyHWID and isNewMessage:
+            if isValidatedTopic and not isMyClient_name and isNewMessage:
                 self.messages.append(json.loads(data.get("message")))
 
     #Die IDs werden 10 Sekunden gespeichert, damit nicht jemand anderes die selbe MQTT-Nachricht erneut senden kann und
@@ -59,13 +65,14 @@ class Comunicator:
         currentTime = datetime.datetime.now().timestamp()
         for value in self.messageIDs:
             valueTime = float(value)
-            if currentTime - valueTime >= 10:
+            if currentTime - valueTime >= self.message_lifetime:
                 self.messageIDs.remove(value)
 
 
     def hasMessages(self):
-        self.processMessages()
-        return len(self.messages) > 0
+        if not self.q.empty() or len(self.messages) >= 1:
+            return True
+        return False
 
     def getMessages(self):
         self.processMessages()
@@ -80,7 +87,7 @@ class Comunicator:
         currentTime = str(datetime.datetime.now().timestamp())
         mqtt_message_values["ID"] = self.MQTT_PATH + currentTime
         mqtt_message_values["timestamp"] = currentTime
-        mqtt_message_values["HWID"] = self.HWID
+        mqtt_message_values["HWID"] = self.client_name
         mqtt_message_values["message"] = raw_message
 
         for key, value in mqtt_message_values.items():
