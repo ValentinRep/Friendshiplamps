@@ -1,4 +1,4 @@
-import communication.mqtt.mqtt_publisher as mqtt_pubisher
+import communication.mqtt.mqtt_publisher as mqtt_publisher
 import communication.mqtt.mqtt_subscriber as mqtt_subscriber
 import multiprocessing
 from multiprocessing import Queue
@@ -8,66 +8,66 @@ import datetime
 
 
 class Comunicator:
-    def __init__(self, message_lifetime, key, client_name, MQTT_SERVER, port, MQTT_PATH):
+    def __init__(self, message_lifetime, key, client_name, mqtt_server, port, mqtt_path):
         self.message_lifetime = message_lifetime
         self.key = key
         self.client_name = client_name
 
-        self.MQTT_SERVER = MQTT_SERVER
+        self.MQTT_SERVER = mqtt_server
         self.port = port
-        self.MQTT_PATH = MQTT_PATH
+        self.MQTT_PATH = mqtt_path
 
         self.messages = []
         self.messageIDs = []
-        self.publisher = mqtt_pubisher.MqttPublisher(MQTT_SERVER, port, MQTT_PATH)
+        self.publisher = mqtt_publisher.MqttPublisher(mqtt_server, port, mqtt_path)
 
-        #Der MQTT-Subscriber muss in einen neuen Prozess gestartet werden, da sonst das Programm auf eine Nachricht
-        #warten würde.
+        # Der MQTT-Subscriber muss in einen neuen Prozess gestartet werden, da sonst das Programm auf eine Nachricht
+        # warten würde.
         self.q = Queue()
-        self.p1 = multiprocessing.Process(target=mqtt_subscriber.subscribe, args=(self.MQTT_SERVER, self.port, self.MQTT_PATH, self.q))
+        self.p1 = multiprocessing.Process(target=mqtt_subscriber.subscribe,
+                                          args=(self.MQTT_SERVER, self.port, self.MQTT_PATH, self.q))
         self.p1.start()
 
     def processMessages(self):
         self.deleteOldMessageIDs()
-        currentTime = datetime.datetime.now().timestamp()
+        current_time = datetime.datetime.now().timestamp()
         while not self.q.empty():
-            isValidatedTopic = False
-            isNewMessage = False
-            isMyClient_name = False
+            is_validated_topic = False
+            is_new_message = False
+            is_my_client_name = False
             data = json.loads(self.q.get().decode())
             for key, value in data.items():
-                decryptedKey = encryption_utility.decryptToBytes(self.key, value.encode())
+                decrypted_key = encryption_utility.decryptToBytes(self.key, value.encode())
                 if key == "ID":
-                    if decryptedKey.startswith(self.MQTT_PATH):
-                        isValidatedTopic = True
-                    if decryptedKey == self.client_name:
-                        isMyClient_name = False
+                    if decrypted_key.startswith(self.MQTT_PATH):
+                        is_validated_topic = True
+                    if decrypted_key == self.client_name:
+                        is_my_client_name = False
                 if key == "timestamp":
                     try:
-                        timestampFloat = float(decryptedKey)
-                        if currentTime - timestampFloat > self.message_lifetime:
-                            isNewMessage = False
+                        timestamp_float = float(decrypted_key)
+                        if current_time - timestamp_float > self.message_lifetime:
+                            is_new_message = False
                         else:
                             if value in self.messageIDs:
-                                isNewMessage = False
+                                is_new_message = False
                             else:
-                                isNewMessage = True
-                            self.messageIDs.append(decryptedKey)
+                                is_new_message = True
+                            self.messageIDs.append(decrypted_key)
                     except ValueError:
                         print("Timestamp ist keine float")
-                data[key] = decryptedKey
-            if isValidatedTopic and not isMyClient_name and isNewMessage:
+                data[key] = decrypted_key
+            if is_validated_topic and not is_my_client_name and is_new_message:
                 self.messages.append(json.loads(data.get("message")))
 
-    #Die IDs werden 10 Sekunden gespeichert, damit nicht jemand anderes die selbe MQTT-Nachricht erneut senden kann und
+    # Die IDs werden 10 Sekunden gespeichert, damit nicht jemand anderes die selbe MQTT-Nachricht erneut senden kann und
     # somit den Partner-Clinet vortäuschen kann. Nachrichten älter als 10 Sekunden werden nicht verarbeitet!
     def deleteOldMessageIDs(self):
-        currentTime = datetime.datetime.now().timestamp()
+        current_time = datetime.datetime.now().timestamp()
         for value in self.messageIDs:
-            valueTime = float(value)
-            if currentTime - valueTime >= self.message_lifetime:
+            value_time = float(value)
+            if current_time - value_time >= self.message_lifetime:
                 self.messageIDs.remove(value)
-
 
     def hasMessages(self):
         if not self.q.empty() or len(self.messages) >= 1:
@@ -76,17 +76,17 @@ class Comunicator:
 
     def getMessages(self):
         self.processMessages()
-        oldMessages = self.messages.copy()
+        old_messages = self.messages.copy()
         self.messages.clear()
-        return oldMessages
+        return old_messages
 
     def publish(self, **kwargs):
         mqtt_message_values = {}
         raw_message = json.dumps(kwargs)
 
-        currentTime = str(datetime.datetime.now().timestamp())
-        mqtt_message_values["ID"] = self.MQTT_PATH + currentTime
-        mqtt_message_values["timestamp"] = currentTime
+        current_time = str(datetime.datetime.now().timestamp())
+        mqtt_message_values["ID"] = self.MQTT_PATH + current_time
+        mqtt_message_values["timestamp"] = current_time
         mqtt_message_values["HWID"] = self.client_name
         mqtt_message_values["message"] = raw_message
 
@@ -95,6 +95,3 @@ class Comunicator:
         mqtt_message = json.dumps(mqtt_message_values)
 
         self.publisher.publish(mqtt_message)
-
-
-
