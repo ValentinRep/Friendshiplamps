@@ -1,8 +1,8 @@
-import communication.mqtt.mqtt_publisher as mqtt_publisher
-import communication.mqtt.mqtt_subscriber as mqtt_subscriber
+import IO.communication.mqtt.mqtt_publisher as mqtt_publisher
+import IO.communication.mqtt.mqtt_subscriber as mqtt_subscriber
 import multiprocessing
 from multiprocessing import Queue
-from communication import encryption_utility
+from IO.communication import encryption_utility
 import json
 import datetime
 
@@ -42,7 +42,7 @@ class Comunicator:
                     if decrypted_key.startswith(self.MQTT_PATH):
                         is_validated_topic = True
                     if decrypted_key == self.client_name:
-                        is_my_client_name = False
+                        is_my_client_name = True
                 if key == "timestamp":
                     try:
                         timestamp_float = float(decrypted_key)

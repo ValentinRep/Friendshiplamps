@@ -1,7 +1,11 @@
+import datetime
 import sys
 import time
-import communication.Communicator as Communicator
+import IO.communication.Communicator as Communicator
+import IO.Board
 from configparser import ConfigParser
+
+from IO import Board
 
 if __name__ == '__main__':
     # Lese Konfigurationsdatei
@@ -15,29 +19,47 @@ if __name__ == '__main__':
 
     message_lifetime = int(config["Communication"]["message_lifetime"])
     client_name = config["Communication"]["client_name"]
+    partner_client_name = config["Parther"]["client_name"]
 
     encryption_key = config["Encryption"]["key"]
     encryption_salt = config["Encryption"]["salt"]
 
     ch = True
     isPushed = False
-    pushedTime = round(time.time())
+    currentTime = datetime.datetime.now().timestamp()
+    firstPushTime = round(time.time())
 
-    communicator = Communicator.Comunicator(message_lifetime, encryption_key, client_name, mqtt_server, port, mqtt_path)
+    partnerCommunicator = Communicator.Comunicator(message_lifetime, encryption_key, mqtt_path + "\\" + partner_client_name, mqtt_server, port, mqtt_path)
+    ownCommunicator = Communicator.Comunicator(message_lifetime, encryption_key, mqtt_path + "\\" + client_name, mqtt_server, port, mqtt_path)
+
+    board = Board.Board()
 
     while True:
-        if communicator.hasMessages():
-            print(communicator.getMessages()[0])
-        else:
-            print("no messages")
-        try:
-            if ch:
-                ch = False
-                message = communicator.publish(aktiviert=True)
+        if partnerCommunicator.hasMessages():
+            messages = partnerCommunicator.getMessages()
+            latestMessage = messages[0]
+            for message in messages:
+                if message.get("timestamp") > latestMessage.get("timestamp"):
+                    latestMessage = message
+            if latestMessage.get("aktiviert"):
+                if not board.isEnabled:
+                    board.enableLamp()
             else:
-                ch = True
-                message = communicator.publish(aktiviert=False)
-            time.sleep(1)
-        except KeyboardInterrupt:
-            print('Fehler')
-            sys.exit()
+                if board.isEnabled:
+                    board.disableLamp()
+
+        currentTime = datetime.datetime.now().timestamp()
+        if board.buttonPressed():
+            if not isPushed:
+                firstPushTime = False
+            isPushed = True
+        else:
+            if isPushed:
+                if board.isEnabled:
+                    ownCommunicator.publish(aktiviert=False, timestamp=currentTime)
+                    board.disableLamp()
+                else:
+                    ownCommunicator.publish(aktiviert=True, timestamp=currentTime)
+                    board.enableLamp()
+            isPushed = False
+        time.sleep(0.1)
