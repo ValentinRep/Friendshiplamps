@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     message_lifetime = int(config["Communication"]["message_lifetime"])
     client_name = config["Communication"]["client_name"]
-    partner_client_name = config["Parther"]["client_name"]
+    partner_client_name = config["Partner"]["client_name"]
 
     encryption_key = config["Encryption"]["key"]
     encryption_salt = config["Encryption"]["salt"]
