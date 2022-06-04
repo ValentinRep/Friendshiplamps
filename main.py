@@ -29,8 +29,8 @@ if __name__ == '__main__':
     currentTime = datetime.datetime.now().timestamp()
     firstPushTime = round(time.time())
 
-    partnerCommunicator = Communicator.Comunicator(message_lifetime, encryption_key, mqtt_path + "\\" + partner_client_name, mqtt_server, port, mqtt_path)
-    ownCommunicator = Communicator.Comunicator(message_lifetime, encryption_key, mqtt_path + "\\" + client_name, mqtt_server, port, mqtt_path)
+    partnerCommunicator = Communicator.Comunicator(message_lifetime, encryption_key, partner_client_name, mqtt_server, port, mqtt_path + "\\" + partner_client_name)
+    ownCommunicator = Communicator.Comunicator(message_lifetime, encryption_key,  client_name, mqtt_server, port, mqtt_path + "\\" + client_name)
 
     board = Board.Board()
 
